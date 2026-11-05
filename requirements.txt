@@ -1,2 +1,2 @@
-streamlit
-qrcode[pil]
+streamlit>=1.40
+qrcode[pil]>=7.4

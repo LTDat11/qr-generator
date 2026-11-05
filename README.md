@@ -1,0 +1,163 @@
+# QR Code Generator
+
+Ứng dụng web đơn giản để tạo mã QR từ đường dẫn URL, xây dựng bằng Python và Streamlit. Người dùng nhập URL, tùy chỉnh giao diện mã QR và tải về dưới dạng ảnh PNG.
+
+## Mục lục
+
+- [Tính năng](#tính-năng)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+- [Cấu trúc dự án](#cấu-trúc-dự-án)
+- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
+- [Cài đặt và chạy cục bộ](#cài-đặt-và-chạy-cục-bộ)
+- [Hướng dẫn sử dụng](#hướng-dẫn-sử-dụng)
+- [Triển khai lên Streamlit Community Cloud](#triển-khai-lên-streamlit-community-cloud)
+- [Cấu hình](#cấu-hình)
+- [Xử lý sự cố](#xử-lý-sự-cố)
+- [Định hướng phát triển](#định-hướng-phát-triển)
+- [Giấy phép](#giấy-phép)
+
+## Tính năng
+
+- Tạo mã QR từ URL ngay khi nhập, xem trước theo thời gian thực.
+- Tự động bổ sung `https://` nếu URL thiếu giao thức.
+- Kiểm tra tính hợp lệ của URL và hiển thị thông báo lỗi rõ ràng.
+- Tùy chỉnh màu mã QR, màu nền và kích thước ô vuông.
+- Chọn mức sửa lỗi (7%, 15%, 25%, 30%).
+- Cảnh báo khi độ tương phản giữa màu mã QR và màu nền quá thấp, dễ gây khó quét.
+- Tải mã QR về dưới dạng ảnh PNG.
+
+## Công nghệ sử dụng
+
+| Thành phần         | Mục đích               |
+| ------------------ | ---------------------- |
+| Python 3.9 trở lên | Ngôn ngữ lập trình     |
+| Streamlit          | Xây dựng giao diện web |
+| qrcode             | Sinh mã QR             |
+| Pillow             | Xử lý và xuất ảnh      |
+
+## Cấu trúc dự án
+
+```
+qr-generator/
+├── .streamlit/
+│   └── config.toml      # Cấu hình giao diện (theme)
+├── .gitignore           # Danh sách file/thư mục bị Git bỏ qua
+├── app.py               # Mã nguồn chính của ứng dụng
+├── requirements.txt     # Danh sách thư viện phụ thuộc
+└── README.md            # Tài liệu dự án
+```
+
+## Yêu cầu hệ thống
+
+- Python 3.9 trở lên
+- Git
+- Trình duyệt web hiện đại (Chrome, Edge, Firefox, Safari)
+
+## Cài đặt và chạy cục bộ
+
+### 1. Clone repository
+
+```bash
+git clone https://github.com/LTDat11/qr-generator.git
+cd qr-generator
+```
+
+### 2. Tạo môi trường ảo
+
+```bash
+python -m venv .venv
+```
+
+Kích hoạt môi trường ảo:
+
+```bash
+# Windows (CMD)
+.venv\Scripts\activate.bat
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+### 3. Cài đặt thư viện
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Chạy ứng dụng
+
+```bash
+streamlit run app.py
+```
+
+Ứng dụng mặc định chạy tại `http://localhost:8501`.
+
+## Hướng dẫn sử dụng
+
+1. Nhập đường dẫn vào ô **Đường dẫn**, ví dụ `https://example.com`.
+2. Mã QR xuất hiện ở khung **Xem trước** bên phải.
+3. (Tùy chọn) Mở mục **Tùy chỉnh giao diện** để đổi màu, kích thước hoặc mức sửa lỗi.
+4. Bấm **Tải về PNG** để lưu mã QR.
+
+Khuyến nghị: dùng màu mã QR tối trên nền sáng và chọn mức sửa lỗi từ Trung bình trở lên để mã dễ quét trên mọi thiết bị.
+
+## Triển khai lên Streamlit Community Cloud
+
+### 1. Đẩy mã nguồn lên GitHub
+
+Đảm bảo file `.gitignore` đã tồn tại trước khi chạy `git add .` để không đưa thư mục `.venv` lên repository.
+
+```bash
+git add .
+git commit -m "Update project"
+git push origin main
+```
+
+### 2. Tạo ứng dụng trên Streamlit
+
+1. Truy cập [share.streamlit.io](https://share.streamlit.io) và đăng nhập bằng tài khoản GitHub.
+2. Chọn **Create app**, sau đó chọn **Deploy a public app from GitHub**.
+3. Chọn repository `qr-generator`, nhánh `main`, file chính `app.py`.
+4. Bấm **Deploy** và chờ quá trình cài đặt hoàn tất.
+
+### 3. Cập nhật sau khi triển khai
+
+Mỗi lần push code mới lên nhánh `main`, Streamlit Community Cloud sẽ tự động triển khai lại.
+
+## Cấu hình
+
+Giao diện được cấu hình trong `.streamlit/config.toml`:
+
+| Khóa                             | Giá trị mặc định | Mô tả                                |
+| -------------------------------- | ---------------- | ------------------------------------ |
+| `theme.base`                     | `light`          | Chế độ sáng hoặc tối                 |
+| `theme.primaryColor`             | `#2563EB`        | Màu nhấn của nút và thành phần chính |
+| `theme.backgroundColor`          | `#F8FAFC`        | Màu nền trang                        |
+| `theme.secondaryBackgroundColor` | `#FFFFFF`        | Màu nền các khung nội dung           |
+| `theme.textColor`                | `#0F172A`        | Màu chữ                              |
+
+Các thông số của mã QR (viền, mức sửa lỗi mặc định) nằm trong hàm `build_qr_png` của `app.py`.
+
+## Xử lý sự cố
+
+| Vấn đề                          | Nguyên nhân thường gặp                  | Cách xử lý                                                      |
+| ------------------------------- | --------------------------------------- | --------------------------------------------------------------- |
+| `streamlit: command not found`  | Chưa kích hoạt môi trường ảo            | Kích hoạt `.venv` rồi chạy lại                                  |
+| `ModuleNotFoundError: qrcode`   | Chưa cài thư viện                       | Chạy `pip install -r requirements.txt`                          |
+| Deploy lỗi trên Streamlit Cloud | Thiếu thư viện trong `requirements.txt` | Mở **Manage app**, xem log và bổ sung thư viện                  |
+| Repository nặng bất thường      | Thư mục `.venv` bị đưa lên Git          | Thêm `.venv/` vào `.gitignore`, chạy `git rm -r --cached .venv` |
+| Điện thoại không quét được mã   | Độ tương phản thấp hoặc mã quá nhỏ      | Dùng màu tối trên nền sáng, tăng kích thước ô vuông             |
+
+## Định hướng phát triển
+
+- Chèn logo vào giữa mã QR.
+- Xuất ảnh định dạng SVG.
+- Tạo hàng loạt mã QR từ danh sách URL.
+- Hỗ trợ các loại dữ liệu khác như văn bản, Wi-Fi, vCard.
+
+## Giấy phép
+
+Dự án được phát hành theo giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.

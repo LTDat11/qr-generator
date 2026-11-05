@@ -1,39 +1,211 @@
+from __future__ import annotations
+
 import io
+from urllib.parse import urlparse
 
 import qrcode
 import streamlit as st
+from qrcode.constants import (
+    ERROR_CORRECT_H,
+    ERROR_CORRECT_L,
+    ERROR_CORRECT_M,
+    ERROR_CORRECT_Q,
+)
 
-st.set_page_config(page_title="QR Code Generator")
-st.title("Tạo mã QR từ URL")
+st.set_page_config(page_title="QR Code Generator", layout="centered")
 
-url = st.text_input("Nhập URL", placeholder="https://example.com")
+CUSTOM_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-col1, col2 = st.columns(2)
-fill_color = col1.color_picker("Màu mã QR", "#000000")
-back_color = col2.color_picker("Màu nền", "#FFFFFF")
-box_size = st.slider("Kích thước ô", 5, 20, 10)
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
 
-if url:
+#MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] {
+    display: none !important;
+}
+
+.block-container {
+    max-width: 880px;
+    padding-top: 3.5rem;
+    padding-bottom: 4rem;
+}
+
+.app-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.35rem 0;
+    color: #0f172a;
+}
+
+.app-subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    margin: 0 0 2rem 0;
+    line-height: 1.5;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 0.75rem 0;
+}
+
+.preview-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    text-align: center;
+    padding: 0 1rem;
+}
+
+div[data-testid="stTextInput"] input {
+    border-radius: 8px;
+    padding: 0.7rem 0.9rem;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 12px;
+}
+
+div[data-testid="stDownloadButton"] button {
+    width: 100%;
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-weight: 600;
+}
+
+div[data-testid="stImage"] img {
+    border-radius: 8px;
+    margin: 0 auto;
+}
+
+details {
+    border-radius: 10px !important;
+}
+</style>
+"""
+
+ERROR_LEVELS = {
+    "Thấp (7%)": ERROR_CORRECT_L,
+    "Trung bình (15%)": ERROR_CORRECT_M,
+    "Khá cao (25%)": ERROR_CORRECT_Q,
+    "Cao (30%)": ERROR_CORRECT_H,
+}
+
+
+def normalize_url(raw: str) -> str | None:
+    """Trả về URL hợp lệ (tự thêm https:// nếu thiếu), hoặc None nếu không hợp lệ."""
+    value = raw.strip()
+    if not value:
+        return None
+    if "://" not in value:
+        value = "https://" + value
+    parsed = urlparse(value)
+    if parsed.scheme not in ("http", "https") or "." not in parsed.netloc:
+        return None
+    return value
+
+
+def luminance(hex_color: str) -> float:
+    channels = [int(hex_color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [
+        c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast_ratio(color_a: str, color_b: str) -> float:
+    lum_a, lum_b = luminance(color_a), luminance(color_b)
+    lighter, darker = max(lum_a, lum_b), min(lum_a, lum_b)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+@st.cache_data(show_spinner=False)
+def build_qr_png(
+    data: str, fill_color: str, back_color: str, box_size: int, error_level: int
+) -> bytes:
     qr = qrcode.QRCode(
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        error_correction=error_level,
         box_size=box_size,
         border=4,
     )
-    qr.add_data(url)
+    qr.add_data(data)
     qr.make(fit=True)
+    image = qr.make_image(fill_color=fill_color, back_color=back_color).convert("RGB")
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
 
-    img = qr.make_image(fill_color=fill_color, back_color=back_color).convert("RGB")
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    png_bytes = buf.getvalue()
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-    st.image(png_bytes, caption="Mã QR của bạn")
-    st.download_button(
-        "Tải về PNG",
-        data=png_bytes,
-        file_name="qrcode.png",
-        mime="image/png",
+st.markdown('<p class="app-title">QR Code Generator</p>', unsafe_allow_html=True)
+st.markdown(
+    '<p class="app-subtitle">Tạo mã QR từ đường dẫn website và tải về dưới dạng ảnh PNG.</p>',
+    unsafe_allow_html=True,
+)
+
+left, right = st.columns([1.1, 1], gap="large")
+
+with left:
+    st.markdown('<p class="section-title">Đường dẫn</p>', unsafe_allow_html=True)
+    raw_url = st.text_input(
+        "URL",
+        placeholder="https://example.com",
+        label_visibility="collapsed",
     )
-else:
-    st.info("Nhập một URL để tạo mã QR.")
+
+    with st.expander("Tùy chỉnh giao diện"):
+        color_col, bg_col = st.columns(2)
+        fill_color = color_col.color_picker("Màu mã QR", "#0F172A")
+        back_color = bg_col.color_picker("Màu nền", "#FFFFFF")
+        box_size = st.slider("Kích thước ô vuông", 5, 20, 10)
+        error_label = st.selectbox(
+            "Mức sửa lỗi",
+            list(ERROR_LEVELS.keys()),
+            index=1,
+            help="Mức cao giúp mã QR vẫn quét được khi bị mờ hoặc che một phần, "
+            "nhưng mã sẽ dày đặc hơn.",
+        )
+
+url = normalize_url(raw_url)
+png_bytes = None
+
+if raw_url.strip() and url is None:
+    left.error("URL không hợp lệ. Hãy nhập địa chỉ dạng https://example.com.")
+elif url:
+    ratio = contrast_ratio(fill_color, back_color)
+    if ratio < 3:
+        left.warning(
+            "Màu mã QR và màu nền quá gần nhau, điện thoại có thể khó quét. "
+            "Hãy chọn màu mã QR tối hơn màu nền."
+        )
+    png_bytes = build_qr_png(
+        url, fill_color, back_color, box_size, ERROR_LEVELS[error_label]
+    )
+
+with right:
+    with st.container(border=True):
+        st.markdown('<p class="section-title">Xem trước</p>', unsafe_allow_html=True)
+        if png_bytes:
+            st.image(png_bytes, use_container_width=True)
+            st.caption(url)
+            st.download_button(
+                "Tải về PNG",
+                data=png_bytes,
+                file_name="qrcode.png",
+                mime="image/png",
+                type="primary",
+            )
+        else:
+            st.markdown(
+                '<div class="preview-empty">Nhập đường dẫn để xem mã QR tại đây.</div>',
+                unsafe_allow_html=True,
+            )
