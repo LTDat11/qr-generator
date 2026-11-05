@@ -21,8 +21,9 @@
 - Tạo mã QR từ URL ngay khi nhập, xem trước theo thời gian thực.
 - Tự động bổ sung `https://` nếu URL thiếu giao thức.
 - Kiểm tra tính hợp lệ của URL và hiển thị thông báo lỗi rõ ràng.
-- Tùy chỉnh màu mã QR, màu nền và kích thước ô vuông.
+- Tùy chỉnh màu mã QR, màu nền và độ phân giải ảnh tải về.
 - Chọn mức sửa lỗi (7%, 15%, 25%, 30%).
+- Tùy chọn thêm ảnh chìm phía sau mã QR (PNG, JPG, WEBP) và điều chỉnh độ đậm. Bỏ trống thì mã QR vẫn được tạo bình thường.
 - Cảnh báo khi độ tương phản giữa màu mã QR và màu nền quá thấp, dễ gây khó quét.
 - Tải mã QR về dưới dạng ảnh PNG.
 
@@ -99,10 +100,12 @@ streamlit run app.py
 
 1. Nhập đường dẫn vào ô **Đường dẫn**, ví dụ `https://example.com`.
 2. Mã QR xuất hiện ở khung **Xem trước** bên phải.
-3. (Tùy chọn) Mở mục **Tùy chỉnh giao diện** để đổi màu, kích thước hoặc mức sửa lỗi.
+3. (Tùy chọn) Mở mục **Tùy chỉnh giao diện** để đổi màu, độ phân giải, mức sửa lỗi hoặc tải lên ảnh chìm.
 4. Bấm **Tải về PNG** để lưu mã QR.
 
 Khuyến nghị: dùng màu mã QR tối trên nền sáng và chọn mức sửa lỗi từ Trung bình trở lên để mã dễ quét trên mọi thiết bị.
+
+Khi dùng ảnh chìm, nên chọn mức sửa lỗi Khá cao hoặc Cao, giữ độ đậm ảnh ở mức 30% trở xuống và ưu tiên ảnh sáng, ít chi tiết. Luôn quét thử bằng điện thoại trước khi sử dụng.
 
 ## Triển khai lên Streamlit Community Cloud
 
@@ -143,13 +146,13 @@ Các thông số của mã QR (viền, mức sửa lỗi mặc định) nằm tr
 
 ## Xử lý sự cố
 
-| Vấn đề                          | Nguyên nhân thường gặp                  | Cách xử lý                                                      |
-| ------------------------------- | --------------------------------------- | --------------------------------------------------------------- |
-| `streamlit: command not found`  | Chưa kích hoạt môi trường ảo            | Kích hoạt `.venv` rồi chạy lại                                  |
-| `ModuleNotFoundError: qrcode`   | Chưa cài thư viện                       | Chạy `pip install -r requirements.txt`                          |
-| Deploy lỗi trên Streamlit Cloud | Thiếu thư viện trong `requirements.txt` | Mở **Manage app**, xem log và bổ sung thư viện                  |
-| Repository nặng bất thường      | Thư mục `.venv` bị đưa lên Git          | Thêm `.venv/` vào `.gitignore`, chạy `git rm -r --cached .venv` |
-| Điện thoại không quét được mã   | Độ tương phản thấp hoặc mã quá nhỏ      | Dùng màu tối trên nền sáng, tăng kích thước ô vuông             |
+| Vấn đề                          | Nguyên nhân thường gặp                               | Cách xử lý                                                              |
+| ------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| `streamlit: command not found`  | Chưa kích hoạt môi trường ảo                         | Kích hoạt `.venv` rồi chạy lại                                          |
+| `ModuleNotFoundError: qrcode`   | Chưa cài thư viện                                    | Chạy `pip install -r requirements.txt`                                  |
+| Deploy lỗi trên Streamlit Cloud | Thiếu thư viện trong `requirements.txt`              | Mở **Manage app**, xem log và bổ sung thư viện                          |
+| Repository nặng bất thường      | Thư mục `.venv` bị đưa lên Git                       | Thêm `.venv/` vào `.gitignore`, chạy `git rm -r --cached .venv`         |
+| Điện thoại không quét được mã   | Độ tương phản thấp, mã quá nhỏ hoặc ảnh chìm quá đậm | Dùng màu tối trên nền sáng, tăng độ phân giải ảnh, giảm độ đậm ảnh chìm |
 
 ## Định hướng phát triển
 

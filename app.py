@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 import qrcode
 import streamlit as st
+from PIL import Image, ImageOps
 from qrcode.constants import (
     ERROR_CORRECT_H,
     ERROR_CORRECT_L,
@@ -129,7 +130,13 @@ def contrast_ratio(color_a: str, color_b: str) -> float:
 
 @st.cache_data(show_spinner=False)
 def build_qr_png(
-    data: str, fill_color: str, back_color: str, box_size: int, error_level: int
+    data: str,
+    fill_color: str,
+    back_color: str,
+    box_size: int,
+    error_level: int,
+    bg_bytes: bytes | None = None,
+    bg_opacity: float = 0.25,
 ) -> bytes:
     qr = qrcode.QRCode(
         error_correction=error_level,
@@ -138,9 +145,26 @@ def build_qr_png(
     )
     qr.add_data(data)
     qr.make(fit=True)
-    image = qr.make_image(fill_color=fill_color, back_color=back_color).convert("RGB")
+
+    # Mặt nạ các ô đen của mã QR (255 = ô QR, 0 = nền).
+    matrix = qr.make_image(fill_color="black", back_color="white").convert("L")
+    modules_mask = matrix.point(lambda p: 255 if p < 128 else 0)
+    size = matrix.size
+
+    # Lớp nền: màu nền, có thể pha thêm ảnh chìm ở độ mờ đã chọn.
+    canvas = Image.new("RGB", size, back_color)
+    if bg_bytes:
+        watermark = ImageOps.exif_transpose(Image.open(io.BytesIO(bg_bytes)))
+        watermark = ImageOps.fit(
+            watermark.convert("RGB"), size, Image.Resampling.LANCZOS
+        )
+        canvas = Image.blend(canvas, watermark, bg_opacity)
+
+    # Vẽ các ô QR lên trên cùng để luôn rõ nét.
+    canvas.paste(Image.new("RGB", size, fill_color), mask=modules_mask)
+
     buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
+    canvas.save(buffer, format="PNG")
     return buffer.getvalue()
 
 
@@ -166,7 +190,15 @@ with left:
         color_col, bg_col = st.columns(2)
         fill_color = color_col.color_picker("Màu mã QR", "#0F172A")
         back_color = bg_col.color_picker("Màu nền", "#FFFFFF")
-        box_size = st.slider("Kích thước ô vuông", 5, 20, 10)
+        box_size = st.slider(
+            "Độ phân giải ảnh (pixel mỗi ô vuông)",
+            5,
+            30,
+            10,
+            help="Quyết định kích thước thật của file PNG tải về. Giá trị càng cao "
+            "ảnh càng lớn và nét, phù hợp để in. Khung xem trước luôn được thu "
+            "vừa màn hình nên không thay đổi kích thước hiển thị.",
+        )
         error_label = st.selectbox(
             "Mức sửa lỗi",
             list(ERROR_LEVELS.keys()),
@@ -174,9 +206,32 @@ with left:
             help="Mức cao giúp mã QR vẫn quét được khi bị mờ hoặc che một phần, "
             "nhưng mã sẽ dày đặc hơn.",
         )
+        bg_file = st.file_uploader(
+            "Ảnh chìm phía sau (tùy chọn)",
+            type=["png", "jpg", "jpeg", "webp"],
+            help="Ảnh được làm mờ và đặt dưới mã QR. Bỏ trống nếu không cần.",
+        )
+        bg_opacity_pct = 25
+        if bg_file:
+            bg_opacity_pct = st.slider(
+                "Độ đậm của ảnh chìm (%)",
+                5,
+                50,
+                25,
+                help="Giá trị càng cao ảnh càng rõ nhưng mã QR càng khó quét.",
+            )
 
 url = normalize_url(raw_url)
 png_bytes = None
+
+bg_bytes = None
+if bg_file:
+    try:
+        bg_bytes = bg_file.getvalue()
+        Image.open(io.BytesIO(bg_bytes)).verify()
+    except Exception:
+        bg_bytes = None
+        left.warning("Không đọc được ảnh chìm. Mã QR vẫn được tạo mà không có ảnh.")
 
 if raw_url.strip() and url is None:
     left.error("URL không hợp lệ. Hãy nhập địa chỉ dạng https://example.com.")
@@ -187,8 +242,18 @@ elif url:
             "Màu mã QR và màu nền quá gần nhau, điện thoại có thể khó quét. "
             "Hãy chọn màu mã QR tối hơn màu nền."
         )
+    if bg_bytes and ERROR_LEVELS[error_label] in (ERROR_CORRECT_L, ERROR_CORRECT_M):
+        left.info(
+            "Khi dùng ảnh chìm, nên chọn mức sửa lỗi Khá cao hoặc Cao để mã dễ quét hơn."
+        )
     png_bytes = build_qr_png(
-        url, fill_color, back_color, box_size, ERROR_LEVELS[error_label]
+        url,
+        fill_color,
+        back_color,
+        box_size,
+        ERROR_LEVELS[error_label],
+        bg_bytes,
+        bg_opacity_pct / 100,
     )
 
 with right:
@@ -196,7 +261,8 @@ with right:
         st.markdown('<p class="section-title">Xem trước</p>', unsafe_allow_html=True)
         if png_bytes:
             st.image(png_bytes, use_container_width=True)
-            st.caption(url)
+            width_px, height_px = Image.open(io.BytesIO(png_bytes)).size
+            st.caption(f"{url}  |  Ảnh tải về: {width_px} x {height_px} px")
             st.download_button(
                 "Tải về PNG",
                 data=png_bytes,
