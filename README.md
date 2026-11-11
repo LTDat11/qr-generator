@@ -1,10 +1,14 @@
-# QR Code Generator
+# Bộ công cụ QR Code và tra cứu danh sách
 
-Ứng dụng web đơn giản để tạo mã QR từ đường dẫn URL hoặc văn bản bất kỳ, xây dựng bằng Python và Streamlit. Người dùng nhập nội dung, tùy chỉnh giao diện mã QR và tải về dưới dạng ảnh PNG.
+Ứng dụng web xây dựng bằng Python và Streamlit, gồm hai công cụ:
+
+1. **Tạo mã QR** từ đường dẫn URL hoặc văn bản bất kỳ, tùy chỉnh giao diện và tải về dưới dạng ảnh PNG.
+2. **Lọc trùng và tra cứu** danh sách học viên: dán danh sách số CMND/CCCD và họ tên từ Excel, đối chiếu với file danh sách để lấy giáo viên hồ sơ, rồi xuất kết quả ra file Excel.
 
 ## Mục lục
 
 - [Tính năng](#tính-năng)
+- [Bảo mật dữ liệu](#bảo-mật-dữ-liệu)
 - [Công nghệ sử dụng](#công-nghệ-sử-dụng)
 - [Cấu trúc dự án](#cấu-trúc-dự-án)
 - [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
@@ -18,6 +22,8 @@
 
 ## Tính năng
 
+### Công cụ tạo mã QR
+
 - Tạo mã QR từ URL hoặc văn bản bất kỳ (hỗ trợ tiếng Việt có dấu và nhiều dòng), xem trước theo thời gian thực.
 - Hiển thị số ký tự của nội dung và báo lỗi rõ ràng khi nội dung quá dài so với dung lượng tối đa của mã QR.
 - Tùy chỉnh màu mã QR, màu nền và độ phân giải ảnh tải về.
@@ -26,14 +32,34 @@
 - Cảnh báo khi độ tương phản giữa màu mã QR và màu nền quá thấp, dễ gây khó quét.
 - Tải mã QR về dưới dạng ảnh PNG.
 
+### Công cụ lọc trùng và tra cứu
+
+- Dán trực tiếp hai cột (số CMND/CCCD, họ tên học viên) từ Excel.
+- Tải lên file Excel danh sách học viên (.xlsx) làm nguồn tra cứu.
+- Tự động nhận diện cột theo tiêu đề `SỐ CMND/CCCD`, `HỌ TÊN HỌC VIÊN`, `GIÁO VIÊN HỒ SƠ`, có thể chọn lại cột và trang tính thủ công.
+- Lọc dòng trùng theo số CMND/CCCD, giữ dòng xuất hiện đầu tiên.
+- Đối chiếu theo số CMND/CCCD, vẫn khớp khi Excel làm mất số 0 ở đầu.
+- Cảnh báo các dòng không tìm thấy và các dòng khớp CCCD nhưng khác họ tên.
+- Xuất file Excel gồm 3 cột: số CMND/CCCD, họ tên học viên, giáo viên hồ sơ. Các ô giáo viên để trống được tô màu vàng.
+
+## Bảo mật dữ liệu
+
+File danh sách học viên chứa thông tin cá nhân (số CMND/CCCD, địa chỉ, số điện thoại).
+
+- Chỉ tải file lên qua giao diện ứng dụng khi sử dụng, **không đưa file Excel vào repository GitHub**.
+- File `.gitignore` đã chặn `*.xlsx`, `*.xls` và `*.csv` để tránh commit nhầm.
+- Ứng dụng triển khai trên Streamlit Community Cloud mặc định có thể được truy cập bởi bất kỳ ai có đường dẫn. Nếu dùng với dữ liệu thật, hãy giới hạn người xem trong phần **Settings, Sharing** của ứng dụng.
+
 ## Công nghệ sử dụng
 
-| Thành phần         | Mục đích               |
-| ------------------ | ---------------------- |
-| Python 3.9 trở lên | Ngôn ngữ lập trình     |
-| Streamlit          | Xây dựng giao diện web |
-| qrcode             | Sinh mã QR             |
-| Pillow             | Xử lý và xuất ảnh      |
+| Thành phần         | Mục đích                       |
+| ------------------ | ------------------------------ |
+| Python 3.9 trở lên | Ngôn ngữ lập trình             |
+| Streamlit          | Xây dựng giao diện web         |
+| qrcode             | Sinh mã QR                     |
+| Pillow             | Xử lý và xuất ảnh              |
+| pandas             | Đọc và đối chiếu dữ liệu Excel |
+| openpyxl           | Đọc và ghi file Excel (.xlsx)  |
 
 ## Cấu trúc dự án
 
@@ -42,7 +68,7 @@ qr-generator/
 ├── .streamlit/
 │   └── config.toml      # Cấu hình giao diện (theme)
 ├── .gitignore           # Danh sách file/thư mục bị Git bỏ qua
-├── app.py               # Mã nguồn chính của ứng dụng
+├── app.py               # Mã nguồn chính (công cụ tạo QR và tra cứu danh sách)
 ├── requirements.txt     # Danh sách thư viện phụ thuộc
 └── README.md            # Tài liệu dự án
 ```
@@ -97,6 +123,8 @@ streamlit run app.py
 
 ## Hướng dẫn sử dụng
 
+### Tab Tạo mã QR
+
 1. Nhập nội dung vào ô **Nội dung**: một đường dẫn như `https://example.com` hoặc một đoạn văn bản bất kỳ.
 2. Mã QR xuất hiện ở khung **Xem trước** bên phải.
 3. (Tùy chọn) Mở mục **Tùy chỉnh giao diện** để đổi màu, độ phân giải, mức sửa lỗi hoặc tải lên ảnh chìm.
@@ -107,6 +135,22 @@ Lưu ý: nếu nhập đường dẫn, hãy ghi đầy đủ giao thức (`https
 Khuyến nghị: dùng màu mã QR tối trên nền sáng và chọn mức sửa lỗi từ Trung bình trở lên để mã dễ quét trên mọi thiết bị.
 
 Khi dùng ảnh chìm, nên chọn mức sửa lỗi Khá cao hoặc Cao, giữ độ đậm ảnh ở mức 30% trở xuống và ưu tiên ảnh sáng, ít chi tiết. Luôn quét thử bằng điện thoại trước khi sử dụng.
+
+### Tab Lọc trùng và tra cứu
+
+1. Ở mục **File danh sách học viên**, tải lên file Excel (.xlsx) chứa các cột `SỐ CMND/CCCD`, `HỌ TÊN HỌC VIÊN`, `GIÁO VIÊN HỒ SƠ`.
+2. Ở mục **Dữ liệu cần tra cứu**, dán hai cột đã copy từ Excel (số CMND/CCCD và họ tên), mỗi học viên một dòng. Có thể dán kèm dòng tiêu đề, ứng dụng sẽ tự bỏ qua.
+3. Xem bảng kết quả và các thống kê: số dòng đã dán, số dòng trùng đã loại, số dòng tìm thấy và không tìm thấy.
+4. Bấm **Tải về Excel** để lấy file kết quả.
+
+Nếu tiêu đề cột trong file khác với tên mặc định, mở mục **Tùy chọn nguồn dữ liệu** để chọn lại trang tính và các cột tương ứng.
+
+Ví dụ dữ liệu dán vào (cách nhau bằng phím Tab khi copy từ Excel):
+
+```
+075304020310	BÙI TÚ AN
+086193007793	BÙI TRẦN PHƯƠNG ANH
+```
 
 ## Triển khai lên Streamlit Community Cloud
 
@@ -147,13 +191,15 @@ Các thông số của mã QR (viền, mức sửa lỗi mặc định) nằm tr
 
 ## Xử lý sự cố
 
-| Vấn đề                          | Nguyên nhân thường gặp                               | Cách xử lý                                                              |
-| ------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
-| `streamlit: command not found`  | Chưa kích hoạt môi trường ảo                         | Kích hoạt `.venv` rồi chạy lại                                          |
-| `ModuleNotFoundError: qrcode`   | Chưa cài thư viện                                    | Chạy `pip install -r requirements.txt`                                  |
-| Deploy lỗi trên Streamlit Cloud | Thiếu thư viện trong `requirements.txt`              | Mở **Manage app**, xem log và bổ sung thư viện                          |
-| Repository nặng bất thường      | Thư mục `.venv` bị đưa lên Git                       | Thêm `.venv/` vào `.gitignore`, chạy `git rm -r --cached .venv`         |
-| Điện thoại không quét được mã   | Độ tương phản thấp, mã quá nhỏ hoặc ảnh chìm quá đậm | Dùng màu tối trên nền sáng, tăng độ phân giải ảnh, giảm độ đậm ảnh chìm |
+| Vấn đề                           | Nguyên nhân thường gặp                               | Cách xử lý                                                              |
+| -------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| `streamlit: command not found`   | Chưa kích hoạt môi trường ảo                         | Kích hoạt `.venv` rồi chạy lại                                          |
+| `ModuleNotFoundError: qrcode`    | Chưa cài thư viện                                    | Chạy `pip install -r requirements.txt`                                  |
+| Deploy lỗi trên Streamlit Cloud  | Thiếu thư viện trong `requirements.txt`              | Mở **Manage app**, xem log và bổ sung thư viện                          |
+| Báo không đọc được file Excel    | File sai định dạng hoặc đang bị khóa                 | Lưu lại dưới dạng `.xlsx` rồi tải lên lại                               |
+| Dòng nào cũng báo không tìm thấy | Chọn sai cột số CMND/CCCD                            | Mở **Tùy chọn nguồn dữ liệu** và chọn lại cột                           |
+| Repository nặng bất thường       | Thư mục `.venv` bị đưa lên Git                       | Thêm `.venv/` vào `.gitignore`, chạy `git rm -r --cached .venv`         |
+| Điện thoại không quét được mã    | Độ tương phản thấp, mã quá nhỏ hoặc ảnh chìm quá đậm | Dùng màu tối trên nền sáng, tăng độ phân giải ảnh, giảm độ đậm ảnh chìm |
 
 ## Định hướng phát triển
 
@@ -161,6 +207,8 @@ Các thông số của mã QR (viền, mức sửa lỗi mặc định) nằm tr
 - Xuất ảnh định dạng SVG.
 - Tạo hàng loạt mã QR từ danh sách URL.
 - Hỗ trợ các mẫu dữ liệu có cấu trúc như Wi-Fi, vCard, email.
+- Cho phép chọn thêm các cột khác của file danh sách để xuất ra kết quả.
+- Đối chiếu theo họ tên khi dữ liệu dán vào không có số CMND/CCCD.
 
 ## Giấy phép
 
