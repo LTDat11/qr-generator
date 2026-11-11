@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import io
-from urllib.parse import urlparse
 
 import qrcode
 import streamlit as st
 from PIL import Image, ImageOps
+from qrcode.exceptions import DataOverflowError
 from qrcode.constants import (
     ERROR_CORRECT_H,
     ERROR_CORRECT_L,
@@ -101,19 +101,6 @@ ERROR_LEVELS = {
 }
 
 
-def normalize_url(raw: str) -> str | None:
-    """Trả về URL hợp lệ (tự thêm https:// nếu thiếu), hoặc None nếu không hợp lệ."""
-    value = raw.strip()
-    if not value:
-        return None
-    if "://" not in value:
-        value = "https://" + value
-    parsed = urlparse(value)
-    if parsed.scheme not in ("http", "https") or "." not in parsed.netloc:
-        return None
-    return value
-
-
 def luminance(hex_color: str) -> float:
     channels = [int(hex_color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
     linear = [
@@ -172,17 +159,18 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 st.markdown('<p class="app-title">QR Code Generator</p>', unsafe_allow_html=True)
 st.markdown(
-    '<p class="app-subtitle">Tạo mã QR từ đường dẫn website và tải về dưới dạng ảnh PNG.</p>',
+    '<p class="app-subtitle">Tạo mã QR từ đường dẫn hoặc đoạn văn bản bất kỳ và tải về dưới dạng ảnh PNG.</p>',
     unsafe_allow_html=True,
 )
 
 left, right = st.columns([1.1, 1], gap="large")
 
 with left:
-    st.markdown('<p class="section-title">Đường dẫn</p>', unsafe_allow_html=True)
-    raw_url = st.text_input(
-        "URL",
-        placeholder="https://example.com",
+    st.markdown('<p class="section-title">Nội dung</p>', unsafe_allow_html=True)
+    raw_text = st.text_area(
+        "Nội dung mã QR",
+        placeholder="Nhập đường dẫn (https://example.com) hoặc văn bản bất kỳ",
+        height=120,
         label_visibility="collapsed",
     )
 
@@ -221,7 +209,7 @@ with left:
                 help="Giá trị càng cao ảnh càng rõ nhưng mã QR càng khó quét.",
             )
 
-url = normalize_url(raw_url)
+content = raw_text.strip()
 png_bytes = None
 
 bg_bytes = None
@@ -233,9 +221,7 @@ if bg_file:
         bg_bytes = None
         left.warning("Không đọc được ảnh chìm. Mã QR vẫn được tạo mà không có ảnh.")
 
-if raw_url.strip() and url is None:
-    left.error("URL không hợp lệ. Hãy nhập địa chỉ dạng https://example.com.")
-elif url:
+if content:
     ratio = contrast_ratio(fill_color, back_color)
     if ratio < 3:
         left.warning(
@@ -246,15 +232,21 @@ elif url:
         left.info(
             "Khi dùng ảnh chìm, nên chọn mức sửa lỗi Khá cao hoặc Cao để mã dễ quét hơn."
         )
-    png_bytes = build_qr_png(
-        url,
-        fill_color,
-        back_color,
-        box_size,
-        ERROR_LEVELS[error_label],
-        bg_bytes,
-        bg_opacity_pct / 100,
-    )
+    try:
+        png_bytes = build_qr_png(
+            content,
+            fill_color,
+            back_color,
+            box_size,
+            ERROR_LEVELS[error_label],
+            bg_bytes,
+            bg_opacity_pct / 100,
+        )
+    except (DataOverflowError, ValueError):
+        left.error(
+            "Nội dung quá dài để tạo mã QR. Hãy rút ngắn văn bản "
+            "hoặc chọn mức sửa lỗi thấp hơn."
+        )
 
 with right:
     with st.container(border=True):
@@ -262,7 +254,12 @@ with right:
         if png_bytes:
             st.image(png_bytes, use_container_width=True)
             width_px, height_px = Image.open(io.BytesIO(png_bytes)).size
-            st.caption(f"{url}  |  Ảnh tải về: {width_px} x {height_px} px")
+            preview_text = content if len(content) <= 60 else content[:57] + "..."
+            preview_text = " ".join(preview_text.split())
+            st.caption(
+                f"{preview_text}  |  {len(content)} ký tự  |  "
+                f"Ảnh tải về: {width_px} x {height_px} px"
+            )
             st.download_button(
                 "Tải về PNG",
                 data=png_bytes,
@@ -272,6 +269,6 @@ with right:
             )
         else:
             st.markdown(
-                '<div class="preview-empty">Nhập đường dẫn để xem mã QR tại đây.</div>',
+                '<div class="preview-empty">Nhập nội dung để xem mã QR tại đây.</div>',
                 unsafe_allow_html=True,
             )

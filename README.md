@@ -1,6 +1,6 @@
 # QR Code Generator
 
-Ứng dụng web đơn giản để tạo mã QR từ đường dẫn URL, xây dựng bằng Python và Streamlit. Người dùng nhập URL, tùy chỉnh giao diện mã QR và tải về dưới dạng ảnh PNG.
+Ứng dụng web đơn giản để tạo mã QR từ đường dẫn URL hoặc văn bản bất kỳ, xây dựng bằng Python và Streamlit. Người dùng nhập nội dung, tùy chỉnh giao diện mã QR và tải về dưới dạng ảnh PNG.
 
 ## Mục lục
 
@@ -18,9 +18,8 @@
 
 ## Tính năng
 
-- Tạo mã QR từ URL ngay khi nhập, xem trước theo thời gian thực.
-- Tự động bổ sung `https://` nếu URL thiếu giao thức.
-- Kiểm tra tính hợp lệ của URL và hiển thị thông báo lỗi rõ ràng.
+- Tạo mã QR từ URL hoặc văn bản bất kỳ (hỗ trợ tiếng Việt có dấu và nhiều dòng), xem trước theo thời gian thực.
+- Hiển thị số ký tự của nội dung và báo lỗi rõ ràng khi nội dung quá dài so với dung lượng tối đa của mã QR.
 - Tùy chỉnh màu mã QR, màu nền và độ phân giải ảnh tải về.
 - Chọn mức sửa lỗi (7%, 15%, 25%, 30%).
 - Tùy chọn thêm ảnh chìm phía sau mã QR (PNG, JPG, WEBP) và điều chỉnh độ đậm. Bỏ trống thì mã QR vẫn được tạo bình thường.
@@ -98,10 +97,12 @@ streamlit run app.py
 
 ## Hướng dẫn sử dụng
 
-1. Nhập đường dẫn vào ô **Đường dẫn**, ví dụ `https://example.com`.
+1. Nhập nội dung vào ô **Nội dung**: một đường dẫn như `https://example.com` hoặc một đoạn văn bản bất kỳ.
 2. Mã QR xuất hiện ở khung **Xem trước** bên phải.
 3. (Tùy chọn) Mở mục **Tùy chỉnh giao diện** để đổi màu, độ phân giải, mức sửa lỗi hoặc tải lên ảnh chìm.
 4. Bấm **Tải về PNG** để lưu mã QR.
+
+Lưu ý: nếu nhập đường dẫn, hãy ghi đầy đủ giao thức (`https://`) để điện thoại nhận diện đó là liên kết và mở được trực tiếp. Nội dung càng dài thì mã QR càng dày đặc và khó quét, nên giữ văn bản ngắn gọn khi có thể.
 
 Khuyến nghị: dùng màu mã QR tối trên nền sáng và chọn mức sửa lỗi từ Trung bình trở lên để mã dễ quét trên mọi thiết bị.
 
@@ -159,7 +160,7 @@ Các thông số của mã QR (viền, mức sửa lỗi mặc định) nằm tr
 - Chèn logo vào giữa mã QR.
 - Xuất ảnh định dạng SVG.
 - Tạo hàng loạt mã QR từ danh sách URL.
-- Hỗ trợ các loại dữ liệu khác như văn bản, Wi-Fi, vCard.
+- Hỗ trợ các mẫu dữ liệu có cấu trúc như Wi-Fi, vCard, email.
 
 ## Giấy phép
 
